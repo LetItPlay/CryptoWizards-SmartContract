@@ -4,7 +4,7 @@
 using namespace std;
 using namespace eosio;
 
-#define EOSIO_ABI2( TYPE, MEMBERS ) \
+#define EOSIO_ABI( TYPE, MEMBERS ) \
 extern "C" { \
    void apply( uint64_t receiver, uint64_t code, uint64_t action ) { \
       auto self = receiver; \

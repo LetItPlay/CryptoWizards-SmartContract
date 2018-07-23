@@ -64,24 +64,57 @@ void letitplay_wizards::updatestate(uint8_t bgcount) {
 	currentState.set(currst, _self);
 }
 
+void letitplay_wizards::swap(uint8_t part, uint64_t wizid1, uint64_t wizid2, account_name owner, asset price) {
+    wizardsT usertable(_self, owner);
+    auto var = ragDistributions.get(part);
+
+	auto wizard1 = usertable.get(wizid1).phenotype[10 + part];
+	auto wizard2 = usertable.get(wizid2).phenotype[10 + part];
+
+    auto amount1 = (uint64_t)trunc((PRICE.amount * (((double)var.sum)/var.possible[wizard1]/20)));
+    auto amount2 = (uint64_t)trunc((PRICE.amount * (((double)var.sum)/var.possible[wizard2]/20)));
+
+    auto ragprice = asset(trunc((amount1 + amount2)/20.0), eosio::string_to_symbol(4, "EOS"));
+
+    eosio_assert(ragprice.amount <= price.amount, "transfer is not equal to price");
+
+    usertable.modify(usertable.find(wizid1), owner, [&](auto &wiz){
+        wiz.phenotype[10 + part] = wizard2;
+    });
+	usertable.modify(usertable.find(wizid2), owner, [&](auto &wiz){
+		wiz.phenotype[10 + part] = wizard1;
+	});
+}
+
 void letitplay_wizards::buy(uint8_t part, uint8_t rag, uint64_t wizid, account_name owner, asset price) {
    	wizardsT usertable(_self, owner);
+    print("7 ");
 
 	auto wizard = usertable.find(wizid);
     auto ragvar = ragsshop.find(part);
     auto var = ragDistributions.get(part);
-    auto amount = (uint64_t)trunc((PRICE.amount * (double)(var.sum/var.possible[rag]/20))/10000);
+    print("8 ");
+
+    auto amount = (uint64_t)trunc((PRICE.amount * (((double)var.sum)/var.possible[rag]/20)));
     auto ragprice = asset(amount, eosio::string_to_symbol(4, "EOS"));
+    printi(ragprice.amount);
+    printi(price.amount);
 
     eosio_assert(price >= ragprice, "transfer is not equal to price");
+    print("9 ");
 
     eosio_assert(ragvar->possible[rag] != 0, "no rags in shop");
+	 print("10 ");
     if (ragvar != ragsshop.end()) {
+		print("101 ");
         ragsshop.modify(ragvar, _self, [&](auto &variant) {
             variant.possible[rag]-=1;
             variant.bought[rag] += 1;
         });
-        usertable.modify(wizard, _self, [&](auto &wiz){
+		 print("11 ");
+        usertable.modify(wizard, owner, [&](auto &wiz){
+		 print("12 ");
+
         	wiz.phenotype[10 + part] = rag;
         });
     }

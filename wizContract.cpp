@@ -5,52 +5,74 @@
 #include "eosio.token.hpp"
 #include <algorithm>
 #include "math.h"
+#include "buffer.hpp"
+#include <stdio.h>
 
 using namespace eosio;
 using namespace std;
 
 void letitplay_wizards::create() {
 
-	auto curr = currentState.get();
-
 	auto data = unpack_action_data<token::transfer_args>();
-    eosio_assert( data.to == _self, "payment should be to wizards");
-    eosio_assert( data.from != _self, "payment should not be from wizards");
 
-    string memostr = data.memo;
-    string delimiter = ",";
-    string memo = memostr.substr(0,memostr.find(delimiter)+delimiter.length()-1);
-    print(memo, " ");
+	if (data.from != _self) {
+        eosio_assert(data.to == _self, "payment should be to wizards");
+        auto curr = currentState.get();
+        string memostr = data.memo;
+        string delimiter = ",";
+        string memo = memostr.substr(0, memostr.find(delimiter) + delimiter.length() - 1);
+        print("1 ");
+        print(memo, " ");
 
-    if (memo == "rag"){
-        memostr.erase(0, memostr.find(delimiter)+delimiter.length());
-        auto part = stoi(memostr.substr(0,memostr.find(delimiter)+delimiter.length()));
-        print(part, " ");
+        if (memo == "rag") {
+            print("2 ");
 
-        memostr.erase(0, memostr.find(delimiter)+delimiter.length());
-        auto rag = stoi(memostr.substr(0,memostr.find(delimiter)+delimiter.length()));
-        print(rag, " ");
+            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            auto part = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
+            print(part, " ");
+            print("4 ");
 
-        memostr.erase(0, memostr.find(delimiter)+delimiter.length());
-        auto wizid = stoi(memostr);
-        print(wizid, " ");
-        //add price check
+            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            auto rag = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
+            print(rag, " ");
+            print("5 ");
 
-        this->buy(part, rag, wizid, data.from, data.quantity);
+            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            auto wizid = stoi(memostr);
+            print(wizid, " ");
+            //add price check
+            print("6 ");
+
+            this->buy(part, rag, wizid, data.from, data.quantity);
+        } else if (memo == "swap") {
+            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            auto part = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
+            print(part, " ");
+
+            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            auto wizid1 = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
+            print(wizid1, " ");
+
+            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            auto wizid2 = stoi(memostr);
+            print(wizid2, " ");
+
+            this->swap(part, wizid1, wizid2, data.from, data.quantity);
+        }
+        else {
+            print("buy wizard");
+            eosio_assert(data.quantity >= PRICE, "insufficient funds");
+            this->generatewizs(data.from, data.quantity);
+            }
+        }
     }
-    else {
-        eosio_assert(data.quantity >= PRICE, "insufficient funds");
-        this->generatewizs(data.from, data.quantity);
-    }
-
-}
 
 void letitplay_wizards::exchange() {
     print("exchange");
     auto data = unpack_action_data<token::transfer_args>();
     eosio_assert( data.to == _self, "payment should be to wizards");
     eosio_assert( data.from != _self, "payment should not be from wizards");
-    eosio_assert(data.quantity.amount == 10000, "insufficient funds");
+    eosio_assert(data.quantity.amount == 1, "insufficient funds");
     this->generatewizs(data.from, data.quantity);
 }
 
@@ -202,18 +224,49 @@ void letitplay_wizards::transfer(account_name from, account_name to, uint64_t id
 
 	require_recipient( from );
 	require_recipient( to );
-
 	wizard find = fromTable.get(id);
-
 	toTable.emplace(from, [&](auto &wizard) {
 		wizard = find;
 	});
-	fromTable.erase(find);
+    fromTable.erase(fromTable.get(id));
 }
+
+void letitplay_wizards::putinbuff (account_name from, account_name owner, uint64_t id) {
+	require_auth(from);
+    auto buyerswiz = buyers.get_index<N(bywizard)>();
+    eosio_assert(buyerswiz.find(id)== buyerswiz.end(), "wizard already on sales");
+    wizardsT fromTable(_self, from);
+	wizardsT toTable(_self, _self);
+	buyers.emplace(from, [&](auto &buyer) {
+        buyer.id = buyers.available_primary_key();
+        buyer.wizard = id;
+        buyer.owner = owner;
+	});
+	wizard find = fromTable.get(id);
+	toTable.emplace(from, [&](auto &wizard) {
+		wizard = find;
+	});
+	fromTable.erase(fromTable.get(id));
+}
+
+void letitplay_wizards::getfrombuff (account_name to, uint64_t id) {
+    require_auth(to);
+    wizardsT fromTable(_self, _self);
+    wizardsT toTable(_self, to);
+    auto buyerswiz = buyers.get_index<N(bywizard)>();
+    buyer b = buyerswiz.get(id);
+    eosio_assert( b.owner == to, "it is not your wizard");
+    wizard find = fromTable.get(id);
+    toTable.emplace(to, [&](auto &wizard) {
+        wizard = find;
+    });
+    fromTable.erase(fromTable.get(id));
+    buyers.erase(buyerswiz.get(id));
+}
+
 
 void letitplay_wizards::burn(account_name from, uint64_t id, string memo) {
 	require_auth(from);
 	wizardsT fromTable(_self, from);
-	wizard find = fromTable.get(id);
-	fromTable.erase(find);
+	fromTable.erase(fromTable.get(id));
 }

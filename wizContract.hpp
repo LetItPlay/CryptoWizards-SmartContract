@@ -5,6 +5,7 @@
 #include "state.hpp"
 #include "ragtrans.hpp"
 #include "tools.hpp"
+#include "buffer.hpp"
 
 #include "eosiolib/singleton.hpp"
 
@@ -27,13 +28,16 @@ private:
 public:
 	eosio::multi_index<N(ragdist), ragdist> ragDistributions;
 	eosio::multi_index<N(races), race> races;
+	eosio::multi_index<N(buyers), buyer,
+            indexed_by<N(bywizard),eosio::const_mem_fun<buyer,uint64_t,&buyer::wizard_index>>> buyers;
 	eosio::multi_index<N(shop), ragshop> ragsshop;
 	eosio::multi_index<N(ragtransfers), ragtrans> ragtransfers;
 	eosio::singleton<N(state), state> currentState;
 
 	// Define scope and code for wizards table
-	letitplay_wizards(account_name self):eosio::contract(self), 
+	letitplay_wizards(account_name self):eosio::contract(self),
 	ragDistributions(_self, _self),
+										 buyers(_self, _self),
 	ragsshop(_self, _self),
 	ragtransfers(_self, _self),
 	currentState(_self, _self),
@@ -52,6 +56,10 @@ public:
 	void generatewizs(account_name to, asset price);
 	//@abi action
 	void transfer(account_name from, account_name to, uint64_t id, string memo);
+    //@abi action
+    void putinbuff (account_name from, account_name owner, uint64_t id);
+    //@abi action
+    void getfrombuff (account_name to, uint64_t id);
 	//@abi action
 	void burn(account_name from, uint64_t id, string memo);
 	//@abi action
@@ -62,6 +70,8 @@ public:
 	void addrag(uint8_t part, uint32_t var, uint32_t num);
 	//@abi action
 	void updatestate(uint8_t bgcount);
+    void swap(uint8_t part, uint64_t wizid1, uint64_t wizid2, account_name owner, asset price);
 };
 
-EOSIO_ABI(letitplay_wizards, (generatewizs)(transfer)(burn)(addrace)(addatt)(addrag)(updatestate))
+
+EOSIO_ABI(letitplay_wizards, (transfer)(putinbuff)(getfrombuff)(burn)(addrace)(addatt)(addrag)(updatestate))
