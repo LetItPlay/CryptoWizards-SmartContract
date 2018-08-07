@@ -11,7 +11,7 @@ Input parameters:
 * `memo` memo
 
 ### Intent
-INTENT. The intention of the author and the invoker of this contract is to transfer wizard token from one user to another. It shall have no other effect.
+INTENT. The intention of the author and the invoker of this contract is to transfer wizard token from one user to another.
 
 ### Term
 TERM. This Contract expires at the conclusion of code execution.

@@ -7,8 +7,7 @@ Cryptowizards are built on top of EOS blackchain. Current version of smart-contr
 
 ## Building instruction
 
-`eosiocpp -o build/wizards.wast wizContract.cpp
-
-eosiocpp -g build/wizards.abi wizContract.cpp`
+'eosiocpp -o build/wizards.wast wizContract.cpp
+eosiocpp -g build/wizards.abi wizContract.cpp'
 
 Your wast file may differ based on parameters set in eosiocpp.

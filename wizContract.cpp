@@ -20,47 +20,33 @@ void letitplay_wizards::create() {
         auto curr = currentState.get();
         string memostr = data.memo;
         string delimiter = ",";
-        string memo = memostr.substr(0, memostr.find(delimiter) + delimiter.length() - 1);
-        print("1 ");
-        print(memo, " ");
+        string memo = memostr.substr(0, memostr.find(delimiter));
 
         if (memo == "rag") {
-            print("2 ");
 
-            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
-            auto part = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
-            print(part, " ");
-            print("4 ");
+            memostr.erase(0, memostr.find(delimiter) + 1);
+            auto part = stoi(memostr.substr(0, memostr.find(delimiter) + 1));
 
-            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
-            auto rag = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
-            print(rag, " ");
-            print("5 ");
+            memostr.erase(0, memostr.find(delimiter) + 1);
+            auto rag = stoi(memostr.substr(0, memostr.find(delimiter) + 1));
 
-            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            memostr.erase(0, memostr.find(delimiter) + 1);
             auto wizid = stoi(memostr);
-            print(wizid, " ");
-            //add price check
-            print("6 ");
 
             this->buy(part, rag, wizid, data.from, data.quantity);
-        } else if (memo == "swap") {
-            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
-            auto part = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
-            print(part, " ");
+        }
+        else if (memo == "swap") {
+            memostr.erase(0, memostr.find(delimiter) + 1);
+            auto part = stoi(memostr.substr(0, memostr.find(delimiter) + 1));
 
-            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
-            auto wizid1 = stoi(memostr.substr(0, memostr.find(delimiter) + delimiter.length()));
-            print(wizid1, " ");
+            memostr.erase(0, memostr.find(delimiter) + 1);
+            auto wizid1 = stoi(memostr.substr(0, memostr.find(delimiter) + 1));
 
-            memostr.erase(0, memostr.find(delimiter) + delimiter.length());
+            memostr.erase(0, memostr.find(delimiter) + 1);
             auto wizid2 = stoi(memostr);
-            print(wizid2, " ");
-
             this->swap(part, wizid1, wizid2, data.from, data.quantity);
         }
         else {
-            print("buy wizard");
             eosio_assert(data.quantity >= PRICE, "insufficient funds");
             this->generatewizs(data.from, data.quantity);
             }

@@ -12,8 +12,6 @@
 using namespace eosio;
 using namespace std;
 
-#define PRICE asset(1000, eosio::string_to_symbol(4, "EOS"))
-
 class letitplay_wizards: public eosio::contract {
 private:
 	account_name rags = N(rags);

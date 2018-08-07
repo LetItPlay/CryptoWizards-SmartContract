@@ -2,9 +2,6 @@
 #include "wizContract.hpp"
 #include "wizard.hpp"
 #include <algorithm>
-#include "math.h"
-
-
 
 void letitplay_wizards::addrace(vector<uint8_t> stats) {
 	require_auth(_self);
@@ -65,6 +62,7 @@ void letitplay_wizards::updatestate(uint8_t bgcount) {
 }
 
 void letitplay_wizards::swap(uint8_t part, uint64_t wizid1, uint64_t wizid2, account_name owner, asset price) {
+	require_auth(owner);
     wizardsT usertable(_self, owner);
     auto var = ragDistributions.get(part);
 
@@ -95,7 +93,7 @@ void letitplay_wizards::buy(uint8_t part, uint8_t rag, uint64_t wizid, account_n
     auto var = ragDistributions.get(part);
     print("8 ");
 
-    auto amount = (uint64_t)trunc((PRICE.amount * (((double)var.sum)/var.possible[rag]/20)));
+    auto amount = calc_rag_price(var, rag);
     auto ragprice = asset(amount, eosio::string_to_symbol(4, "EOS"));
     printi(ragprice.amount);
     printi(price.amount);

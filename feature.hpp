@@ -2,9 +2,12 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/types.hpp>
 #include <eosiolib/asset.hpp>
+#include "math.h"
 
 using namespace eosio;
 using namespace std;
+
+#define PRICE asset(1000, eosio::string_to_symbol(4, "EOS"))
 
 //@abi table races i64
 struct race {
@@ -48,3 +51,9 @@ struct ragshop {
 
 	EOSLIB_SERIALIZE( ragshop, (num)(possible)(bought))
 };
+
+uint64_t calc_rag_price(const ragdist& dist, uint8_t rag){
+    return (uint64_t)trunc((PRICE.amount * (((double)dist.sum)/dist.possible[rag]/20)));
+}
+
+
