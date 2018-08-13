@@ -95,7 +95,7 @@ void letitplay_wizards::generatewizs(account_name to, asset price) {
 		auto var = ragDistributions.get(i);
 		if (var.sum != 0) {
 			uint8_t res = 0;
-			uint32_t ind = ragArray[i] % var.sum;
+			uint32_t ind = 1 + ragArray[i] % var.sum;
 			uint32_t current = var.possible[res];
 			while ((long)ind - (long)current > 0) {
 				ind -= current;
@@ -114,13 +114,16 @@ void letitplay_wizards::generatewizs(account_name to, asset price) {
 		wizard = newWiz;
 	});
 
-	auto shopArray = letitplay_wizards::genrandomvec(&curr, to, ragCount);
-	for (i = 0; i < ragCount; i++) {
-		auto shop = ragsshop.find(i);
-		auto ragvar = ragDistributions.get(i);
+	uint8_t newItemsCount= 2;	
+	auto shopTypesArray = letitplay_wizards::genrandomvec(&curr, to, newItemsCount);
+	auto shopArray = letitplay_wizards::genrandomvec(&curr, to, newItemsCount);
+	for (i = 0; i < newItemsCount; i++) {
+		long itemType = shopTypesArray[i] % ragCount;		
+		auto shop = ragsshop.find(itemType);
+		auto ragvar = ragDistributions.get(itemType);
 		if (ragvar.sum != 0) {
 			uint8_t res = 0;
-			uint32_t ind = shopArray[i] % ragvar.sum;
+			uint32_t ind = 1 + shopArray[itemType] % ragvar.sum;
 			uint32_t current = ragvar.possible[res];
 			while ((long)ind - (long)current > 0) {
 				ind -= current;
