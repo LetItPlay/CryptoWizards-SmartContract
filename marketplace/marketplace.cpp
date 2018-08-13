@@ -43,9 +43,9 @@ public:
             eosio_assert(sale->state != 1, "sale already exists");
             sale++;            
         }
-
+        auto minPrice = asset(1, eosio::string_to_symbol(4, "EOS"));
         eosio_assert( price.is_valid(), "invalid price" );
-        eosio_assert( price.amount >= 0, "must bet positive quantity" );
+        eosio_assert( price >= minPrice, "price must be >= 0.0001 EOS" );
 
         sales.emplace(owner,[&](auto &sale){
             sale.id = sales.available_primary_key();
@@ -137,10 +137,9 @@ public:
             eosio_assert( wizard.state != 2, "already sold");
 
             auto toUs = data.quantity;
-            toUs.amount = data.quantity.amount*PERCENTAGES;
-
             auto toSeller = data.quantity;
-            toSeller.amount = toSeller.amount - toUs.amount;
+            toSeller.amount = (uint64_t)trunc (data.quantity.amount/1.03);
+            toUs.amount = data.quantity.amount - toSeller.amount;
 
             print(toSeller);
 
