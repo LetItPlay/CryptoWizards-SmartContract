@@ -8,6 +8,7 @@ using namespace eosio;
 using namespace std;
 
 #define PRICE asset(1000, eosio::string_to_symbol(4, "EOS"))
+#define PRICE5 asset(5000, eosio::string_to_symbol(4, "EOS"))
 
 //@abi table races i64
 struct race {

@@ -51,7 +51,7 @@ public:
 				 this->exchange();
 			 }
 	}
-	void generatewizs(account_name to, asset price);
+	void generatewizs(account_name to, asset price, uint8_t quality);
 	//@abi action
 	void transfer(account_name from, account_name to, uint64_t id, string memo);
     //@abi action

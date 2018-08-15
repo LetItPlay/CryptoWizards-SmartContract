@@ -47,8 +47,13 @@ void letitplay_wizards::create() {
             this->swap(part, wizid1, wizid2, data.from, data.quantity);
         }
         else {
-            eosio_assert(data.quantity >= PRICE, "insufficient funds");
-            this->generatewizs(data.from, data.quantity);
+			if (data.quantity >= PRICE5){
+				this->generatewizs(data.from, data.quantity, 5);
+			}
+			else{
+				eosio_assert(data.quantity >= PRICE, "insufficient funds");
+				this->generatewizs(data.from, data.quantity, 1);
+			}
             }
         }
     }
@@ -59,10 +64,10 @@ void letitplay_wizards::exchange() {
     eosio_assert( data.to == _self, "payment should be to wizards");
     eosio_assert( data.from != _self, "payment should not be from wizards");
     eosio_assert(data.quantity.amount == 1, "insufficient funds");
-    this->generatewizs(data.from, data.quantity);
+    this->generatewizs(data.from, data.quantity,1);
 }
 
-void letitplay_wizards::generatewizs(account_name to, asset price) { 
+void letitplay_wizards::generatewizs(account_name to, asset price, uint8_t quality) { 
 	auto curr = currentState.get();
 	auto raceCount = races.rbegin()->num + 1;
 	auto race = (uint32_t)(letitplay_wizards::genrandomvec(&curr,to,1)[0] % raceCount);
@@ -76,14 +81,14 @@ void letitplay_wizards::generatewizs(account_name to, asset price) {
 	auto bckgr = letitplay_wizards::genrandomvec(&curr, to,1)[0] % curr.bgmax;
 
 	auto phenArray = letitplay_wizards::genrandomvec(&curr, to, possExtAtt.size());
-	auto ragArray = letitplay_wizards::genrandomvec(&curr, to, ragCount);
+	auto ragArray = letitplay_wizards::genrandomvec(&curr, to, ragCount * quality);
 	auto abilArray = letitplay_wizards::gennormalvec(&curr, to, genotypeCount, 50, 8);
 	auto newWiz = wizard();
 	newWiz.id = currID++;
 	newWiz.original_cost = price;
 	newWiz.phenotype[0] = race;
 	newWiz.phenotype[1] = bckgr;
-	int i;
+	int i,j;
 	for (i = 2; i < min((uint8_t)10, (uint8_t)possExtAtt.size()); i++) {
 		if (possExtAtt[i-2] == 0) {
 			newWiz.phenotype[i] = 0;
@@ -95,12 +100,25 @@ void letitplay_wizards::generatewizs(account_name to, asset price) {
 		auto var = ragDistributions.get(i);
 		if (var.sum != 0) {
 			uint8_t res = 0;
-			uint32_t ind = 1 + ragArray[i] % var.sum;
-			uint32_t current = var.possible[res];
-			while ((long)ind - (long)current > 0) {
-				ind -= current;
-				res++;
-				current = var.possible[res];
+			uint8_t bestProb = 0;
+			for (j = 0; j < quality; j++){
+				uint8_t tempres = 0;
+				uint32_t ind = 1 +  ragArray[i * quality + j] % var.sum;
+				uint32_t current = var.possible[tempres];
+				while ((long)ind - (long)current > 0) {
+					ind -= current;
+					tempres++;
+					current = var.possible[tempres];
+				}
+				if ( j == 0 ){
+					res = tempres;
+					bestProb = current;
+				} else {
+					if (bestProb >= current){
+						bestProb = current;
+						res = tempres;
+					}
+				}
 			}
 			newWiz.phenotype[i + 10] = res;
 		}
@@ -123,7 +141,7 @@ void letitplay_wizards::generatewizs(account_name to, asset price) {
 		auto ragvar = ragDistributions.get(itemType);
 		if (ragvar.sum != 0) {
 			uint8_t res = 0;
-			uint32_t ind = 1 + shopArray[itemType] % ragvar.sum;
+			uint32_t ind = 1 + shopArray[i] % ragvar.sum;
 			uint32_t current = ragvar.possible[res];
 			while ((long)ind - (long)current > 0) {
 				ind -= current;
@@ -182,10 +200,11 @@ vector<double> letitplay_wizards::gennormalvec(state* curr, account_name from, u
 	//box-muller
 	  do
 	  {
+		//this should never happen, but if for some reason we did not generate enough random numbers let's get some more
 		if (randInd + 2 >= length * 2)
 		{
 		  ran = genrandomvec(curr, from, length * 2);
-		  uint8_t randInd = 0;
+		  randInd = 0;
 		}
 		//random for (-1..1])
 		u1 = (((double)ran[randInd++]) / 0x7fffffff * 2 - 1);
