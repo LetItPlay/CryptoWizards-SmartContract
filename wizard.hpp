@@ -2,10 +2,15 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/types.hpp>
 #include <eosiolib/asset.hpp>
-#include "feature.hpp"
 
 using namespace eosio;
 using namespace std;
+
+#define myN(accName) N(accName)
+
+//account names
+#define WIZARDSTOKEN wizardstoken
+//#define WIZARDSTOKEN opcheese1234
 
 #define MAX_UINT64 std::numeric_limits<uint64_t>::max()
 

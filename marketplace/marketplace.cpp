@@ -1,14 +1,15 @@
 
 #include <eosiolib/transaction.hpp>
-#include <marketplace.hpp>
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/time.hpp>
 #include <eosiolib/asset.hpp>
 #include <eosiolib/contract.hpp>
 #include <eosiolib/crypto.h>
 #include <exception>
+#include <math.h>
+#include <eosio.token/eosio.token.hpp>
 #include "tools.hpp"
-#include "eosio.token.hpp"
+#include "marketplace.hpp"
 
 using namespace eosio;
 using namespace std;
@@ -30,9 +31,12 @@ public:
         datastream<const char*> ds( buffer, actual_size);
         transaction tx;
         ds >> tx;
-        eosio_assert((tx.actions.end()-tx.actions.begin()) == 2 &&
-                     tx.actions[0].account == N(wizardmarket) && tx.actions[0].name == N(createsale) &&
-                     tx.actions[1].account == N(wizardstoken) && tx.actions[1].name == N(transfer), "invalid transaction" );
+        eosio_assert((tx.actions.end()-tx.actions.begin()) == 2, "crpwz: wrong number of actions");
+        eosio_assert(  tx.actions[0].account == N(wizardmarket), "crpwz: wrong 1st recipient");
+        eosio_assert(  tx.actions[0].name == N(createsale), "crpwz: wrong 1st action");
+
+        eosio_assert(  tx.actions[1].account == N(wizardstoken), "crpwz: wrong 2st recipient");
+        eosio_assert(  tx.actions[1].name == N(transfer), "crpwz: wrong 2st action");
 
         wizardsT fromTable(N(wizardstoken), owner);
         auto wizard = fromTable.get(id);
@@ -58,11 +62,13 @@ public:
         });
     }
 
-    void apply(uint64_t receiver, uint64_t code, uint64_t action){
+    void apply(uint64_t receiver, uint64_t code, uint64_t action){       
         if (code == N(eosio.token) && action == N(transfer)) {
-            this->sellwizard();
+            auto data = unpack_action_data<token::transfer_args>();
+            if (data.from != _self) {
+                this->sellwizard();
+            }
         }
-
     }
 
     //@abi action
@@ -72,7 +78,7 @@ public:
         datastream<const char*> ds( buffer, actual_size);
         transaction tx;
         ds >> tx;
-        eosio_assert((tx.actions.end()-tx.actions.begin()) == 2 &&
+        eosio_assert((tx.actions.end()-tx.actions.begin()) >= 2 &&
                      tx.actions[0].account == N(wizardmarket) && tx.actions[0].name == N(cancelsale) &&
                      tx.actions[1].account == N(wizardstoken) && tx.actions[1].name == N(getfrombuff), "invalid transaction" );
 
@@ -116,6 +122,14 @@ public:
         }
     }
 
+      //@abi action
+    void clsalebyid(uint32_t id) {
+        require_auth(_self);
+        auto sale = sales.get(id);
+        eosio_assert (2 == sale.state, "can delete only finished sales");
+        sales.erase(sales.get(id));       
+    }
+
 
     void sellwizard(){
         char buffer[512];
@@ -124,7 +138,7 @@ public:
         transaction tx;
         ds >> tx;
 
-        eosio_assert((tx.actions.end()-tx.actions.begin()) == 2 &&
+        eosio_assert((tx.actions.end()-tx.actions.begin()) >= 2 &&
                      tx.actions[0].account == N(eosio.token) && tx.actions[0].name == N(transfer) &&
                      tx.actions[1].account == N(wizardstoken) && tx.actions[1].name == N(getfrombuff), "invalid transaction" );
 
@@ -138,7 +152,7 @@ public:
 
             auto toUs = data.quantity;
             auto toSeller = data.quantity;
-            toSeller.amount = (uint64_t)trunc (data.quantity.amount/1.03);
+            toSeller.amount = (uint64_t)trunc(data.quantity.amount/1.03);
             toUs.amount = data.quantity.amount - toSeller.amount;
 
             print(toSeller);
@@ -155,7 +169,7 @@ public:
             ).send();
             action(
                     permission_level{_self, N(active)},
-                    N(wizardstoken), N(putinbuff),
+                    N(wizards), N(putinbuff),
                     std::make_tuple(_self, data.from, wizard.wizard)
             ).send();
         }
@@ -169,4 +183,4 @@ public:
              indexed_by<N(bydate),eosio::const_mem_fun<sale,uint64_t,&sale::date_index>>> sales;
 };
 
-EOSIO_ABI(marketplace, (cancelsale)(createsale)(clsalebyuser)(clsalebydate))
+EOSIO_ABI(marketplace, (cancelsale)(createsale)(clsalebyuser)(clsalebydate)(clsalebyid))

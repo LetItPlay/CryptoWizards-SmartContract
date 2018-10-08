@@ -61,6 +61,26 @@ void letitplay_wizards::updatestate(uint8_t bgcount) {
 	currentState.set(currst, _self);
 }
 
+
+void letitplay_wizards::updateseed(uint32_t seedinc) {
+	require_auth(N(pingsender12));
+	auto currst = currentState.get_or_create(_self);
+	currst.seed += seedinc;
+	currentState.set(currst, _self);
+}
+
+
+void letitplay_wizards::setsecret(uint64_t secret1,uint64_t secret2,uint64_t secret3,uint64_t secret4,uint64_t secret5) {
+	require_auth(N(pingsender12));
+	auto currst = currentSecret.get_or_create(_self);
+	currst.secret1 = secret1;
+	currst.secret2 = secret2;
+	currst.secret3 = secret3;
+	currst.secret4 = secret4;
+	currst.secret5 = secret5;
+	currentSecret.set(currst, _self);
+}
+
 void letitplay_wizards::swap(uint8_t part, uint64_t wizid1, uint64_t wizid2, account_name owner, asset price) {
 	require_auth(owner);
     wizardsT usertable(_self, owner);
@@ -76,42 +96,38 @@ void letitplay_wizards::swap(uint8_t part, uint64_t wizid1, uint64_t wizid2, acc
 
     eosio_assert(ragprice.amount <= price.amount, "transfer is not equal to price");
 
-    usertable.modify(usertable.find(wizid1), owner, [&](auto &wiz){
+    usertable.modify(usertable.find(wizid1), 0, [&](auto &wiz){
         wiz.phenotype[10 + part] = wizard2;
     });
-	usertable.modify(usertable.find(wizid2), owner, [&](auto &wiz){
+	usertable.modify(usertable.find(wizid2), 0, [&](auto &wiz){
 		wiz.phenotype[10 + part] = wizard1;
 	});
 }
 
 void letitplay_wizards::buy(uint8_t part, uint8_t rag, uint64_t wizid, account_name owner, asset price) {
    	wizardsT usertable(_self, owner);
-    print("7 ");
+    
 
 	auto wizard = usertable.find(wizid);
     auto ragvar = ragsshop.find(part);
     auto var = ragDistributions.get(part);
-    print("8 ");
-
+   
     auto amount = calc_rag_price(var, rag);
     auto ragprice = asset(amount, eosio::string_to_symbol(4, "EOS"));
     printi(ragprice.amount);
     printi(price.amount);
 
-    eosio_assert(price >= ragprice, "transfer is not equal to price");
-    print("9 ");
+    eosio_assert(price >= ragprice, "transfer is not equal to price"); 
 
-    eosio_assert(ragvar->possible[rag] != 0, "no rags in shop");
-	 print("10 ");
+    eosio_assert(ragvar->possible[rag] != 0, "no rags in shop");	
     if (ragvar != ragsshop.end()) {
-		print("101 ");
-        ragsshop.modify(ragvar, _self, [&](auto &variant) {
+		
+        ragsshop.modify(ragvar, 0, [&](auto &variant) {
             variant.possible[rag]-=1;
             variant.bought[rag] += 1;
         });
-		 print("11 ");
-        usertable.modify(wizard, owner, [&](auto &wiz){
-		 print("12 ");
+		
+        usertable.modify(wizard, 0, [&](auto &wiz){		
 
         	wiz.phenotype[10 + part] = rag;
         });
